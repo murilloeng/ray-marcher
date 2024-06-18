@@ -1,0 +1,12 @@
+*
+!*/
+!*.md
+!*.cpp
+!*.hpp
+!*.sln
+!*.vert
+!*.frag
+!*.vcxproj
+!*Makefile
+!.gitignore
+!.vscode/*.json
