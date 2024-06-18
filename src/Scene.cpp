@@ -11,6 +11,7 @@ namespace ray_marcher
 		setup_gl();
 		setup_buffers();
 		setup_shaders();
+		setup_uniforms();
 		buffers_transfer();
 	}
 
@@ -65,6 +66,13 @@ namespace ray_marcher
 		m_program->fragment_shader()->path("shd/ray-marcher.frag");
 		//program
 		m_program->setup();
+	}
+	void Scene::setup_uniforms(void)
+	{
+		glUseProgram(m_program->id());
+		glUniform1f(glGetUniformLocation(m_program->id(), "focal_length"), 1);
+		glUniform3f(glGetUniformLocation(m_program->id(), "camera_position"), 0, 0, 0);
+		glUniform4f(glGetUniformLocation(m_program->id(), "camera_rotation"), 1, 0, 0, 0);
 	}
 
 	//buffers

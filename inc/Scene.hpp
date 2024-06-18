@@ -27,6 +27,7 @@ namespace ray_marcher
 		void setup_gl(void);
 		void setup_buffers(void);
 		void setup_shaders(void);
+		void setup_uniforms(void);
 		
 		//buffers
 		void buffers_transfer(void);
