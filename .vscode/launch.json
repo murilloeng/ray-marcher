@@ -21,6 +21,17 @@
 					"ignoreFailures": true
 				}
 			]
+		},
+		{
+			"args": [],
+			"name": "msvc",
+			"environment": [],
+			"type": "cppvsdbg",
+			"request": "launch",
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"program": "${workspaceFolder}/dist/x64/Debug/ray-marcher.exe"
 		}
 	]
 }

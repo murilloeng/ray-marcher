@@ -5,14 +5,29 @@
 
 //ext
 #include "external/cpp/inc/GL/glew.h"
-#include "external/cpp/inc/GL/freeglut.h"
+#include "external/cpp/inc/GLFW/glfw3.h"
 
 //ray-marcher
 #include "ray-marcher/inc/Scene.hpp"
 #include "ray-marcher/inc/Program.hpp"
 
 //data
+static GLFWwindow* window;
 static ray_marcher::Scene* scene;
+
+//setup
+void setup(void)
+{
+	int32_t width, height;
+	scene = new ray_marcher::Scene;
+	glfwGetWindowSize(window, &width, &height);
+	glUniform1i(glGetUniformLocation(scene->program()->id(), "width"), width);
+	glUniform1i(glGetUniformLocation(scene->program()->id(), "height"), height);
+}
+void cleanup(void)
+{
+	delete scene;
+}
 
 //callbacks
 static void callback_idle(void)
@@ -25,54 +40,48 @@ static void callback_display(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//draw
 	scene->draw();
-	//buffers
-	glutSwapBuffers();
+	//swap
+	glfwSwapBuffers(window);
 }
-static void callback_reshape(int width, int height)
+static void callback_resize(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
 	glUniform1i(glGetUniformLocation(scene->program()->id(), "width"), width);
 	glUniform1i(glGetUniformLocation(scene->program()->id(), "height"), height);
-	glutPostRedisplay();
 }
-static void callback_keyboard(unsigned char key, int x1, int x2)
+static void callback_keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	if(key == 27)
+	if(key == GLFW_KEY_ESCAPE)
 	{
-		glutDestroyWindow(glutGetWindow());
+		glfwSetWindowShouldClose(window, true);
 	}
 }
 
 int main(int argc, char** argv)
 {
 	//setup
-	glutInit(&argc, argv);
-	glutInitWindowSize(900, 900);
-	glutInitWindowPosition(0, 0);
-	glutInitContextVersion(4, 6);
-	glutInitContextProfile(GLUT_CORE_PROFILE);
-	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-	//window
-	glutCreateWindow("Canvas");
+	if(!glfwInit()) exit(EXIT_FAILURE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	window = glfwCreateWindow(700, 700, "Ray Marching", NULL, NULL);
 	//glew
-	if(glewInit() != GLEW_OK)
-	{
-		fprintf(stderr, "Error: can't setup glew!\n");
-		exit(EXIT_FAILURE);
-	}
-	scene = new ray_marcher::Scene;
+	glfwMakeContextCurrent(window);
+	if(glewInit() != GLEW_OK) exit(EXIT_FAILURE);
 	//callbacks
-	glutIdleFunc(callback_idle);
-	// glutMouseFunc(callback_mouse);
-	// glutMotionFunc(callback_motion);
-	glutDisplayFunc(callback_display);
-	glutReshapeFunc(callback_reshape);
-	// glutSpecialFunc(callback_special);
-	// glutMouseWheelFunc(callback_wheel);
-	glutKeyboardFunc(callback_keyboard);
-	//start
-	glutFullScreen();
-	glutMainLoop();
+	glfwSetKeyCallback(window, callback_keyboard);
+	glfwSetWindowSizeCallback(window, callback_resize);
+	//loop
+	setup();
+	while(!glfwWindowShouldClose(window))
+	{
+		callback_idle();
+		callback_display();
+		glfwPollEvents();
+	}
+	//destroy window
+	glfwDestroyWindow(window);
+	//finish glfw
+	glfwTerminate();
 	//return
 	return EXIT_SUCCESS;
 }
