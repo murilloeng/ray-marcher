@@ -1,4 +1,5 @@
 //std
+#include <chrono>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -14,11 +15,14 @@
 //data
 static GLFWwindow* window;
 static ray_marcher::Scene* scene;
+static std::chrono::high_resolution_clock::time_point t1;
 
 //callbacks
 static void callback_idle(void)
 {
-	return;
+	const std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+	const int64_t time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+	glUniform1i(glGetUniformLocation(scene->program()->id(), "time"), int32_t(time));
 }
 static void callback_display(void)
 {
@@ -49,6 +53,7 @@ int main(int argc, char** argv)
 	if(!glfwInit()) exit(EXIT_FAILURE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	t1 = std::chrono::high_resolution_clock::now();
 	window = glfwCreateWindow(700, 700, "Ray Marching", NULL, NULL);
 	//glew
 	glfwMakeContextCurrent(window);
