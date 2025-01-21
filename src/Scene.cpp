@@ -69,7 +69,13 @@ namespace ray_marcher
 	}
 	void Scene::setup_uniforms(void)
 	{
+		//data
+		int32_t v[4];
+		glGetIntegerv(GL_VIEWPORT, v);
+		//uniforms
 		glUseProgram(m_program->id());
+		glUniform1i(glGetUniformLocation(m_program->id(), "width"), v[2]);
+		glUniform1i(glGetUniformLocation(m_program->id(), "height"), v[3]);
 		glUniform1f(glGetUniformLocation(m_program->id(), "focal_length"), 1);
 		glUniform3f(glGetUniformLocation(m_program->id(), "camera_position"), 0, 0, 0);
 		glUniform4f(glGetUniformLocation(m_program->id(), "camera_rotation"), 1, 0, 0, 0);

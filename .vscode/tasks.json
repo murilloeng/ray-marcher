@@ -23,7 +23,30 @@
 				"panel": "dedicated",
 				"showReuseMessage": false,
 			}
+		},
+		{
+			"args": [],
+			"label": "run",
+			"type": "shell",
+			"group": "build",
+			"linux" : 
+			{
+				"command": "make ${input:make}"
+			},
+			"windows" : 
+			{
+				"command": "${input:msbuild-run}"
+			},
+			"presentation": 
+			{
+				"echo": false,
+				"clear": true,
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+			}
 		}
+
 	],
 	"inputs": [
 		{
@@ -44,6 +67,16 @@
 				"/property:Configuration=Release /target:Clean", 
 				"/property:Configuration=Debug; dist/x64/Debug/ray-marcher.exe", 
 				"/property:Configuration=Release; dist/x64/Release/ray-marcher.exe"
+			]
+		},
+		{
+			"id": "msbuild-run",
+			"type": "pickString",
+			"description": "MSBuild:",
+			"options": 
+			[
+				"dist/x64/Debug/ray-marcher.exe", 
+				"dist/x64/Release/ray-marcher.exe"
 			]
 		}
 	]

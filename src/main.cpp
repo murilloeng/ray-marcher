@@ -15,20 +15,6 @@
 static GLFWwindow* window;
 static ray_marcher::Scene* scene;
 
-//setup
-void setup(void)
-{
-	int32_t width, height;
-	scene = new ray_marcher::Scene;
-	glfwGetWindowSize(window, &width, &height);
-	glUniform1i(glGetUniformLocation(scene->program()->id(), "width"), width);
-	glUniform1i(glGetUniformLocation(scene->program()->id(), "height"), height);
-}
-void cleanup(void)
-{
-	delete scene;
-}
-
 //callbacks
 static void callback_idle(void)
 {
@@ -71,13 +57,15 @@ int main(int argc, char** argv)
 	glfwSetKeyCallback(window, callback_keyboard);
 	glfwSetWindowSizeCallback(window, callback_resize);
 	//loop
-	setup();
+	scene = new ray_marcher::Scene;
 	while(!glfwWindowShouldClose(window))
 	{
 		callback_idle();
 		callback_display();
 		glfwPollEvents();
 	}
+	//delete
+	delete scene;
 	//destroy window
 	glfwDestroyWindow(window);
 	//finish glfw

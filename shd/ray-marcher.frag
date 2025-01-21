@@ -9,6 +9,11 @@ uniform vec3 camera_position;
 
 out vec4 fragment_color;
 
+#define march_steps 100
+#define march_min 1.00e-05
+#define march_max 1.00e+30
+#define march_normal 1.00e-02
+
 struct Box
 {
 	vec3 m_color;
@@ -28,15 +33,6 @@ struct Sphere
 	float m_radius;
 };
 
-uint n_boxes;
-uint n_planes;
-uint n_spheres;
-
-Box boxes[100];
-Plane planes[100];
-Sphere spheres[100];
-
-
 float sdf_box(vec3 point, Box box)
 {
 	vec3 q = abs(point - box.m_center) - box.m_sizes / 2;
@@ -51,70 +47,73 @@ float sdf_sphere(vec3 point, Sphere sphere)
 	return length(point - sphere.m_center) - sphere.m_radius;
 }
 
-float sdf(vec3 point, out vec3 color)
+float sdf(vec3 point)
 {
-	float sdf = 1e30, sdf_object;
-	for(uint i = 0; i < n_boxes; i++)
-	{
-		sdf_object = sdf_box(point, boxes[i]);
-		if(abs(sdf_object) < sdf)
-		{
-			sdf = sdf_object;
-			color = boxes[i].m_color;
-		}
-	}
-	for(uint i = 0; i < n_planes; i++)
-	{
-		sdf_object = sdf_plane(point, planes[i]);
-		if(abs(sdf_object) < sdf)
-		{
-			sdf = sdf_object;
-			color = planes[i].m_color;
-		}
-	}
-	for(uint i = 0; i < n_spheres; i++)
-	{
-		sdf_object = sdf_sphere(point, spheres[i]);
-		if(abs(sdf_object) < sdf)
-		{
-			sdf = sdf_object;
-			color = spheres[i].m_color;
-		}
-	}
+	//objects
+	Sphere sphere_1 = Sphere(vec3(0, 0, 1), vec3(+0, +0, 20), 5);
+	Sphere sphere_2 = Sphere(vec3(0, 0, 1), vec3(-10, +0, 20), 5);
+	Sphere sphere_3 = Sphere(vec3(0, 0, 1), vec3(+10, +0, 20), 5);
+	Sphere sphere_4 = Sphere(vec3(0, 0, 1), vec3(+0, -10, 20), 5);
+	Sphere sphere_5 = Sphere(vec3(0, 0, 1), vec3(+0, +10, 20), 5);
+	Plane plane = Plane(vec3(0, 0, 1), vec3(0, -2, 0), vec3(0, 0, 1));
+	//distance
+	float sdf = march_max;
+	sdf = min(sdf, sdf_sphere(point, sphere_1));
+	sdf = min(sdf, sdf_sphere(point, sphere_2));
+	sdf = min(sdf, sdf_sphere(point, sphere_3));
+	sdf = min(sdf, sdf_sphere(point, sphere_4));
+	sdf = min(sdf, sdf_sphere(point, sphere_5));
+	//return
 	return sdf;
 }
-
-void scene(void)
+vec3 compute_normal(vec3 p)
 {
-	//sizes
-	n_boxes = 0;
-	n_planes = 1;
-	n_spheres = 0;
-	//spheres
-	float t = 0.001 * 3.1416 / 180;
-	spheres[0] = Sphere(vec3(1, 0, 0), vec3(0, 0, -5), 3);
-	boxes[0] = Box(vec3(0, 0, 1), vec3(0, 0, -3), vec3(5, 5, 5));
-	planes[0] = Plane(vec3(0, 1, 0), vec3(0, 0, -5), vec3(0, cos(t), sin(t)));
+	vec2 d = vec2(march_normal, 0.0);
+	float gx = sdf(p + d.xyy) - sdf(p - d.xyy);
+	float gy = sdf(p + d.yxy) - sdf(p - d.yxy);
+	float gz = sdf(p + d.yyx) - sdf(p - d.yyx);
+	return normalize(vec3(gx, gy, gz));
 }
 
-vec3 ray_color(vec3 ray_direction)
+vec3 ray_march(vec3 ro, vec3 rd)
 {
 	//data
-	vec3 color;
 	float s = 0, ds;
 	//search
-	for(uint i = 0; i < 100; i++)
+	for(uint i = 0; i < march_steps; i++)
 	{
-		ds = sdf(camera_position + s * ray_direction, color);
-		if(ds < 1e-5)
+		//check
+		ds = sdf(ro + s * rd);
+		if(ds < march_min)
 		{
+			vec3 p = ro + s * rd;
+			vec3 normal = compute_normal(p);
+			// part 2.2 - add lighting
+
+			// part 2.2.1 - calculate diffuse lighting
+			vec3 lightColor = vec3(1.0);
+			vec3 lightSource = vec3(0, 0, -1.0);
+			float diffuseStrength = max(0.0, dot(normalize(lightSource), normal));
+			vec3 diffuse = lightColor * diffuseStrength;
+
+			// part 2.2.2 - calculate specular lighting
+			vec3 viewSource = normalize(ro);
+			vec3 reflectSource = normalize(reflect(-lightSource, normal));
+			float specularStrength = max(0.0, dot(viewSource, reflectSource));
+			specularStrength = pow(specularStrength, 64.0);
+			vec3 specular = specularStrength * lightColor;
+
+			// part 2.2.3 - calculate lighting
+			vec3 lighting = diffuse * 0.75 + specular * 0.25;
+			vec3 color = lighting;
+
+			// note: add gamma correction
+			color = pow(color, vec3(1.0 / 2.2));
 			return color;
 		}
+		//update
 		s += ds;
-		if(s > 1e5)
-		{
-			return vec3(0);
-		}
+		if(s > march_max) return vec3(0);
 	}
 	//return
 	return vec3(0);
@@ -128,8 +127,7 @@ void main(void)
 	const float m = min(w, h);
 	const float x1 = 2 * gl_FragCoord[0] / m - w / m;
 	const float x2 = 2 * gl_FragCoord[1] / m - h / m;
-	const vec3 ray_direction = normalize(vec3(x1, x2, -focal_length));
+	const vec3 ray_direction = normalize(vec3(x1, x2, focal_length));
 	//fragment
-	scene();
-	fragment_color = vec4(ray_color(ray_direction), 1);
+	fragment_color = vec4(ray_march(camera_position, ray_direction), 1);
 }
